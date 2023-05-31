@@ -39,7 +39,6 @@ diccionario_cod_depto <- diccionario_cod_depto[-c(3)]
 
 puestos22 <- left_join(puestos22, diccionario_clae2, by = "clae2")
 puestos22 <- left_join(puestos22, diccionario_cod_depto, by = "departamento")
-puestos22 <- puestos22[-c(11)] # saco nombres de departamentos
 
 # Puestos de Trabajo bajo secreto estadístico: 
 # reemplazamos los casilleros que tenían -99 en la columna puestos por 0
