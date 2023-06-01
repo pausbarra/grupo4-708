@@ -52,20 +52,49 @@ puestos22$puestos[which(puestos22$puestos == -99)] <- 0
 puestos22 %>% 
   group_by(puestos, provincia) %>% 
   filter(puestos == 0) %>% 
-  count(provincia)
+  count(provincia) %>% 
+  print(n=25)
 #VER REPRESENTATIVIDAD
 
 # Agrupamos provincias por regiones:
-# tomamos a CABA y BS AS como parte de la region PAMPA, 
-# aunque el indec cuenta al gran buenos aires como una region aparte
+
+#Averiguo el codigo de aquellos departamentos (24) que pertenecen al AMBA segun INDEC 
+#Fuente: https://www.indec.gob.ar/dbindec/folleto_gba.pdf
+glimpse(diccionario_cod_depto)
+diccionario_cod_depto %>% 
+  filter(nombre_provincia_indec=="Buenos Aires") %>% 
+  filter(nombre_departamento_indec %in% c("Lomas de Zamora", "Quilmes", "Lanús",
+                                          "General San Martín", "Tres de Febrero",
+                                          "Avellaneda", "Morón", "San Isidro", 
+                                          "Malvinas Argentinas", "Vicente López",
+                                          "San Miguel", "José C. Paz", "Hurlingham",
+                                          "Ituzaingó", "La Matanza", "Almirante Brown",
+                                          "Merlo", "Moreno", "Florencio Varela",
+                                          "Tigre", "Berazategui", "Esteban Echeverría",
+                                          "San Fernando", "Ezeiza"))
+#verifico que sea integer
+class(puestos22$departamento)
+
+#creo vector con el codigo de deptos del AMBA por simplicidad.
+deptosAMBA <- c(2000, 6028, 6035, 6091,6260, 6270, 
+                6274, 6371, 6408, 6410, 6412, 
+                6427, 6434, 6490, 6515, 6539, 
+                6560, 6568, 6658, 6749, 6756, 
+                6760, 6805, 6840, 6861)
+
+#Agrupo por regiones, respetando la clasificacion del INDEC. 
+#La region pampeana incluye a todos los departamentos de Bs.As que no pertencen al AMBA.
 
 puestos22 <- puestos22 %>% 
   mutate(region = case_when(provincia %in% c(66, 38, 90, 10, 46, 86) ~ "NOA",
                             provincia %in% c(34, 22, 18, 54) ~ "NEA",
                             provincia %in% c(50, 70, 74) ~ "CUYO",
-                            provincia %in% c(14, 82, 42, 30) ~ "PAMPA",
                             provincia %in% c(58, 62, 26, 78, 94) ~ "PATAGONIA",
-                            provincia %in% c(6, 2) ~ "BSAS"))
+                            provincia %in% c(14, 82, 42, 30, 6) &  
+                              !(departamento %in% deptosAMBA) ~ "PAMPA",
+                            departamento %in% deptosAMBA ~ "AMBA"))
+
+unique(puestos22$region)
 
 # Contamos la cantidad de NAs por columna
 
@@ -76,11 +105,26 @@ cantidadNA <- colSums(is.na(puestos22))
 # calculamos la cantidad de puestos por provincia y actividad en el año
 # los resultados están redondeados para arriba
 
+#agrupacion por provincia y letra 
 promedioAnual <- puestos22 %>% 
   group_by(provincia, letra) %>% 
   summarise(totalpuestos = sum(puestos, na.rm = TRUE)) %>% 
-  mutate(promedio = totalpuestos/12)
+  mutate(promedio = ceiling(totalpuestos/12)) #lo redondeo para arriba
 
+#agrupacion por departamento y clae2. 
+promedioAnual2 <- puestos22 %>% 
+  group_by(departamento, clae2) %>% 
+  summarise(totalpuestos = sum(puestos, na.rm = TRUE)) %>% 
+  mutate(promedio = ceiling(totalpuestos/12))
+
+#creamos un nuevo data frame con los promedios incluidos  
+puestos22_mean <-
+  left_join(puestos22, promedioAnual2, by= c("departamento","clae2")) %>% 
+  filter(fecha=="2022-02-01") %>% #me quedo con una fecha sola porque tengo el promedio
+  select(-puestos, -totalpuestos, -fecha, -mes, -año) %>% 
+  group_by(departamento, clae2)
+
+glimpse(puestos22_mean)
 
 # Gráfico Red de Flujos
 # Seleccionar solo las dos columnas deseadas
