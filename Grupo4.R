@@ -99,6 +99,11 @@ unique(puestos22$region)
 # Contamos la cantidad de NAs por columna
 
 cantidadNA <- colSums(is.na(puestos22))
+#los omitimos ya que no podemos analizar de donde provienen
+
+puestos22 <- puestos22 %>% 
+  na.omit()
+
 #VER REPRESENTATIVIDAD
 
 # PROMEDIO ANUAL
@@ -124,20 +129,54 @@ puestos22_mean <-
   select(-puestos, -totalpuestos, -fecha, -mes, -año) %>% 
   group_by(departamento, clae2)
 
+cantNAA <- colSums(is.na(puestos22_mean))
+
 glimpse(puestos22_mean)
 
-# Gráfico Red de Flujos
+
+#intento grafico 2--------
+puestos22_red <- puestos22_mean %>%
+  group_by(region, letra) %>% 
+  summarise(weight = sum(promedio))
+
+#normalizo para que el weight este entre 0 y 1 con media y desvio.
+sum(puestos22_red$weight)
+
+media_weight <- mean(puestos22_red$weight)
+desvio_weight <- sd(puestos22_red$weight)
+
+#agrego constante arbitraria para no tener valores negativos
+
+puestos22_red_norm <- puestos22_red %>% 
+  na.omit() %>% 
+  mutate(weight = ((weight-media_weight)/ desvio_weight) + 1 )
+
+
+glimpse(puestos22_red_norm)
+
+
+# prueba de red region-letra con weight --------
+
 # Seleccionar solo las dos columnas deseadas
-columnas_deseadas <- puestos22[, c("nombre_provincia_indec", "letra_desc")]
+columnas_deseadas <- puestos22_red_norm[, c("region", "letra", "weight")]
 
 # Crear la red de flujos
-red_flujos <- graph_from_data_frame(columnas_deseadas, directed = TRUE)
+g <- graph_from_data_frame(columnas_deseadas, directed = FALSE)
 # undirected?
 
+E(g)$weight
+
+bipartite.mapping(g)
+V(g)$type <- bipartite_mapping(g)$type
+
 # Personalizar los nodos y los bordes
-V(red_flujos)$color <- "lightblue"  # Color de los nodos
-V(red_flujos)$size <- 10  # Tamaño de los nodos
-E(red_flujos)$color <- "grey"  # Color de los bordes
+V(g)$color <- ifelse(V(g)$type, "lightblue", "salmon")
+V(g)$shape <- ifelse(V(g)$type, "circle", "square")
+E(g)$color <- "lightgray"
+
+is.weighted(g)
 
 # Visualizar la red de flujos
-plot(red_flujos)
+plot(g, vertex.label.cex = 0.8, vertex.label.color = "black", edge.width = E(g)$weight)
+
+
