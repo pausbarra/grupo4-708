@@ -54,7 +54,16 @@ puestos22 %>%
   filter(puestos == 0) %>% 
   count(provincia) %>% 
   print(n=25)
+
 #VER REPRESENTATIVIDAD
+
+#Asigno la letra X a aquellas actividades clasificadas como Otros
+puestos22 <- puestos22 %>%
+  mutate(letra = ifelse(letra_desc == "OTROS", "X", letra))
+
+#4177 observaciones con la letra X
+puestos22 %>% 
+  count(letra)
 
 # Agrupamos provincias por regiones:
 
@@ -148,7 +157,6 @@ desvio_weight <- sd(puestos22_red$weight)
 #agrego constante arbitraria para no tener valores negativos
 
 puestos22_red_norm <- puestos22_red %>% 
-  na.omit() %>% 
   mutate(weight = ((weight-media_weight)/ desvio_weight) + 1 )
 
 
@@ -168,15 +176,31 @@ E(g)$weight
 
 bipartite.mapping(g)
 V(g)$type <- bipartite_mapping(g)$type
-
+g
 # Personalizar los nodos y los bordes
 V(g)$color <- ifelse(V(g)$type, "lightblue", "salmon")
+V(g)$size <- ifelse(V(g)$type, 15, 21)
+V(g)$label.font <-  ifelse(V(g)$type, 1, 2) #negrita para regiones
 V(g)$shape <- ifelse(V(g)$type, "circle", "square")
 E(g)$color <- "lightgray"
 
+#Como no entra patagonia en el grafico, le asigno una abreviatura
+V(g)$short_label <- ifelse(V(g)$name == "PATAGONIA", "PTG", V(g)$name)
 is.weighted(g)
-
+V(g)$label <- V(g)$short_label
 # Visualizar la red de flujos
-plot(g, vertex.label.cex = 0.8, vertex.label.color = "black", edge.width = E(g)$weight)
+
+#establezco seed para que sea siempre el mismo grafico
+seed_bipartita1 <- 1236
+set.seed(seed_bipartita1)
+plot(g, layout= layout_with_graphopt,
+     vertex.label.cex = 1,
+     vertex.label.color = "black",
+     edge.width = E(g)$weight,
+     main="Red Bipartita de Regiones y Tipo de Actividad Económica",
+     main.y=-4,
+     margin=c(0, 0, 0.1, 0))
+   
+
 
 
