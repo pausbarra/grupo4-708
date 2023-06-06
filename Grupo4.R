@@ -200,7 +200,66 @@ plot(g, layout= layout_with_graphopt,
      main="Red Bipartita de Regiones y Tipo de Actividad Económica",
      main.y=-4,
      margin=c(0, 0, 0.1, 0))
-   
+
+#Proyecciones-----
+#Creo proyeccion de actividades (muestro regiones)
+proy_region <- bipartite.projection(g, which=FALSE)
+
+#Creo proyeccion de regiones (muestro actividades)
+proy_activ <- bipartite.projection(g, which=TRUE)
+
+#Atributos de la proyeccion
+
+#color
+#Busco colores
+colors()[grep("yellow", colors())]
+colors()[grep("blue", colors())]
+colors()[grep("violet", colors())]
+colors()[grep("pink", colors())]
+
+V(proy_region)$color <- case_when(V(proy_region)$name=="NEA"~"greenyellow",
+                                V(proy_region)$name=="PATAGONIA"~"royalblue",
+                                V(proy_region)$name=="AMBA"~"orangered",
+                                V(proy_region)$name=="CUYO"~"violetred4",
+                                V(proy_region)$name=="NOA"~"gold",
+                                V(proy_region)$name=="PAMPA"~"lightpink")
+
+## Proyeccion actividades------
+#Ploteo la proyeccion de regiones. Red Completa
+#podriamos hacer que los edges respeten el color de los nodos de los cuales salen¿?
+
+plot(proy_region,
+     vertex.label.cex = 1.25,
+     vertex.label.color = "black",
+     vertex.size=40,
+     edge.color= "grey",
+     edge.width = 2,
+     margin=c(0, 0, 0.1, 0),
+     main="¿Cómo se relacionan las provincias segun las actividades que realizan?",
+     cex.main=1.5) #no cambia tamaño, tendria que estar un poco mas abajo, (main.y)
+
+##Proyeccion Regiones-----
+colors()[grep("light", colors())]
+
+#podriamos hacer algun tipo de sectorizacion por color y agregar leyenda con activ.
+plot(proy_activ,
+     vertex.label.cex = 1.25,
+     vertex.label.color = "black",
+     vertex.label.font=2,
+     vertex.color="lightskyblue",
+     vertex.size=12,
+     edge.color= "grey",
+     edge.width = E(g)$weight, #el weight del original
+     margin=c(0, 0, 0.1, 0),
+     main="¿Cómo se relacionan las actividades segun las regiones donde se realizan?",
+     cex.main=1.5)#no cambia tamaño, tendria que estar un poco mas abajo, (main.y))
+
+#Metricas------
+degree(g)
+closeness(g)
+betweenness(g)
 
 
 
+
+     
