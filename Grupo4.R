@@ -254,6 +254,15 @@ plot(proy_activ,
      main="¿Cómo se relacionan las actividades segun las regiones donde se realizan?",
      cex.main=1.5)#no cambia tamaño, tendria que estar un poco mas abajo, (main.y))
 
+
+## Comparación de nuestro dataset vs. los datos recopilados por el Ministerio de Economía
+
+# Filtrar campos específicos en las dos primeras columnas
+datos_filtrados <- subset(puestos22, "nombre_provincia_indec" %in% c("catamarca", "jujuy", "la rioja", "salta", "santiago del estero", "tucuman") & "fecha" %in% c("2022-07-01"))
+
+# Crear la tabla dinámica y obtener el total
+total <- aggregate("puestos" ~ "nombre_provincia_indec" + "fecha" + "letra_desc", data = datos_filtrados, FUN = sum)
+
 #Metricas------
 degree(g)
 closeness(g)
