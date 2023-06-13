@@ -255,6 +255,12 @@ plot(proy_activ,
      cex.main=1.5)#no cambia tamaño, tendria que estar un poco mas abajo, (main.y))
 
 
+##Metricas------
+degree(g)
+closeness(g)
+betweenness(g)
+
+
 ## Comparación de nuestro dataset vs. los datos recopilados por el Ministerio de Economía
 
 # Filtrar campos específicos en las dos primeras columnas
@@ -314,12 +320,6 @@ grafico_red <- ggplot() +
 
 # Mostrar el gráfico de red
 print(grafico_red)
-
-
-##Metricas------
-degree(g)
-closeness(g)
-betweenness(g)
 
 
 
