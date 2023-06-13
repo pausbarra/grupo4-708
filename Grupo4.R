@@ -263,7 +263,60 @@ datos_filtrados <- subset(puestos22, "nombre_provincia_indec" %in% c("catamarca"
 # Crear la tabla dinámica y obtener el total
 total <- aggregate("puestos" ~ "nombre_provincia_indec" + "fecha" + "letra_desc", data = datos_filtrados, FUN = sum)
 
-#Metricas------
+
+## Red Bipartita con Centralidad Autovector
+library(igraph)
+library(ggplot2)
+
+# Crear nodos
+nodos_region <- unique(puestos22$region)
+nodos_letra_desc <- unique(puestos22$letra_desc)
+
+# Crear edges
+edges <- puestos22[, c("region", "letra_desc", "puestos")]
+
+# Crear vector de nombres de nodos
+nombres_nodos <- c(nodos_region, nodos_letra_desc)
+
+# Crear red bipartita
+red_bipartita <- graph_from_data_frame(edges, directed = FALSE, vertices = nombres_nodos)
+
+# Calcular centralidad autovector
+centralidad_autovector <- eigen_centrality(red_bipartita)$vector
+
+# Agregar la centralidad autovector como atributo a los nodos
+V(red_bipartita)$centralidad_autovector <- centralidad_autovector
+
+# Crear el objeto del gráfico de red
+grafo <- red_bipartita
+
+# Establecer los colores de los nodos para regiones y actividades económicas
+colores_nodos <- c("region" = "blue", "letra_desc" = "red")
+
+# Calcular la posición de los nodos utilizando el algoritmo Fruchterman-Reingold
+posiciones_nodos <- layout_with_fr(grafo)
+
+# Convertir los datos de los enlaces en un data.frame
+enlaces <- as.data.frame(get.edgelist(grafo))
+
+# Crear el gráfico de red utilizando ggplot2
+grafico_red <- ggplot() +
+  theme_void() +
+  geom_segment(aes(x = posiciones_nodos[enlaces$x, 1], y = posiciones_nodos[enlaces$x, 2],
+                   xend = posiciones_nodos[enlaces$y, 1], yend = posiciones_nodos[enlaces$y, 2]),
+               arrow = arrow(length = unit(0.15, "cm")), alpha = 0.5, show.legend = FALSE) +
+  geom_point(aes(x = posiciones_nodos[, 1], y = posiciones_nodos[, 2], color = V(grafo)$centralidad_autovector),
+             size = 5) +
+  scale_color_gradient(low = "blue", high = "red", name = "Centralidad Autovector") +
+  labs(title = "Red Bipartita con Centralidad Autovector",
+       x = "", y = "") +
+  theme(plot.title = element_text(size = 16, face = "bold"))
+
+# Mostrar el gráfico de red
+print(grafico_red)
+
+
+##Metricas------
 degree(g)
 closeness(g)
 betweenness(g)
