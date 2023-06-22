@@ -157,10 +157,16 @@ desvio_weight <- sd(puestos22_red$weight)
 #agrego constante arbitraria para no tener valores negativos
 
 puestos22_red_norm <- puestos22_red %>% 
-  mutate(weight = ((weight-media_weight)/ desvio_weight) + 1 )
+  mutate(weight = ((weight-media_weight)/ desvio_weight)+1)
 
+#nuevo intento de normalizacion / x maximo
+puestos22_red_norm2 <- puestos22_red %>% 
+  mutate(weight = weight/ max(puestos22_red$weight))
+           
+ 
+max(puestos22_red$weight)
 
-glimpse(puestos22_red_norm)
+glimpse(puestos22_red_norm) %>% print(n=200)
 
 
 # prueba de red region-letra con weight --------
@@ -216,7 +222,7 @@ colors()[grep("yellow", colors())]
 colors()[grep("blue", colors())]
 colors()[grep("violet", colors())]
 colors()[grep("pink", colors())]
-
+colors()[grep("grey", colors())]
 V(proy_region)$color <- case_when(V(proy_region)$name=="NEA"~"greenyellow",
                                 V(proy_region)$name=="PATAGONIA"~"royalblue",
                                 V(proy_region)$name=="AMBA"~"orangered",
@@ -235,7 +241,7 @@ plot(proy_region,
      edge.color= "grey",
      edge.width = 2,
      margin=c(0, 0, 0.1, 0),
-     main="¿Cómo se relacionan las provincias segun las actividades que realizan?",
+     main="¿Cómo se relacionan las regiones segun las actividades que realizan?",
      cex.main=1.5) #no cambia tamaño, tendria que estar un poco mas abajo, (main.y)
 
 ##Proyeccion Regiones-----
@@ -254,12 +260,182 @@ plot(proy_activ,
      main="¿Cómo se relacionan las actividades segun las regiones donde se realizan?",
      cex.main=1.5)#no cambia tamaño, tendria que estar un poco mas abajo, (main.y))
 
+## Comparación de nuestro dataset vs. los datos recopilados por el Ministerio de Economía----
+
+# Filtrar campos específicos en las dos primeras columnas
+datos_filtrados <- subset(puestos22,
+                          "nombre_provincia_indec" %in% c("catamarca",
+                                                          "jujuy", 
+                                                          "la rioja",
+                                                          "salta", 
+                                                          "santiago del estero", 
+                                                          "tucuman")
+                          & "fecha" %in% c("2022-07-01"))
+
+# Crear la tabla dinámica y obtener el total
+total <- aggregate("puestos" ~ "nombre_provincia_indec" + "fecha" + "letra_desc", 
+                   data = datos_filtrados, FUN = sum)
+
 #Metricas------
 degree(g)
-closeness(g)
-betweenness(g)
+closeness(g, V(g)) %>% sort()
+betweenness(g) 
+edge.betweenness(g)
+
+E(g)[[57]]
+
+g_sin_x
+
+#elimino las actividades clasificadas como otros para que no distorsione analisis.
+g_sin_x <- delete.vertices(g, 25)
+degree(g_sin_x) #red completa
+betweenness(g_sin_x, weights=NULL
+
+#NEA-B es el que mas betweenness tiene
+edge.betweenness(proy_activ, weights=NULL) 
+
+##NEA-B es el que tiene el weight mas bajo tambien.
+E(g_sin_x)[[38]]
+min(E(g_sin_x)$weight)
+
+all_shortest_paths(g_sin_x, from=3)
+shortest_paths(g_sin_x, from = 3, weights=NA)
+
+transitivity(proy_activ)
+
+min(E(g_sin_x)$weight)
+edge_density(g_sin_x)
+#Analis de proyecciones por provincia y letra---------------------
+
+#Creamos tabla con provincia y letra
+puestos22_red_prov_letra<- puestos22_mean %>%
+  group_by(nombre_provincia_indec, letra) %>% 
+  summarise(weight = sum(promedio))
+
+#Estandarizamos weight
+puestos22_red_norm_prov_letra <- puestos22_red_prov_letra %>% 
+  mutate(weight = ((weight-media_weight)/ desvio_weight)+1)
+
+#Selecciono columnas
+columnas_deseadas_prov_letra <- puestos22_red_norm_prov_letra[, c("nombre_provincia_indec", "letra", "weight")]
+
+# Crear la red de flujos
+gprov_letra <- graph_from_data_frame(columnas_deseadas_prov_letra, directed = FALSE)
+gprov_letra <- delete.vertices(gprov_letra, 43) #elimino la categoria X
+
+#Grafo bipartito
+bipartite_mapping(gprov_letra)
+V(gprov_letra)$type <- bipartite_mapping(gprov_letra)$type
+
+#Abrevio nombres de provincias
+V(gprov_letra)$short_label <- case_when(V(gprov_letra)$name == "Santiago del Estero" ~ "Sgo. del Estero",  
+                                        V(gprov_letra)$name == "Tierra del Fuego" ~ "T. del Fuego",
+                                        V(gprov_letra)$name == "Buenos Aires" ~ "Bs. As.",
+                                        !V(gprov_letra)$name %in% c("Santiago del Estero", "Tierra del Fuego", "Buenos Aires") ~ V(gprov_letra)$name)
+E(gprov_letra)$weight
+V(gprov_letra)$label <- V(gprov_letra)$short_label
+
+##Proyecciones-------
+###Proyeccion de provincias----
+
+proy_prov_letra <- bipartite.projection(gprov_letra, which="false")
+
+#Abreviatura para que entre en la forma seleccionada
+V(proy_prov_letra)$short_label <- case_when(V(proy_prov_letra)$name == "Santiago Del Estero" ~ "S. Del Estero",  
+                                        V(proy_prov_letra)$name == "Tierra Del Fuego" ~ "T. Del Fuego",
+                                        V(proy_prov_letra)$name == "Buenos Aires" ~ "Bs. As.",
+                                        !V(proy_prov_letra)$name %in% c("Santiago Del Estero", "Tierra Del Fuego", "Buenos Aires") ~ V(proy_prov_letra)$name)
+
+#Definimos el color de los nodos de acuerdo a la suma del weight por provincia
+
+#Suma de los pesos  por provincia 
+suma_pesos <- aggregate(weight ~ from, data = get.data.frame(gprov_letra), sum)
+print(suma_pesos)
+
+E(proy_prov_letra)$weight
+#Normalizacion para poder usarlos en el plot
+suma_pesos_norm <- (suma_pesos$weight - min(suma_pesos$weight)) / (max(suma_pesos$weight) - min(suma_pesos$weight))
+
+#Busco paleta de colores
+colores_intensidad <- heat.colors(length(suma_pesos_norm))
+
+
+V(proy_prov_letra)$color <- colores_intensidad[match(V(proy_prov_letra)$name, suma_pesos$from)]
+
+####Ploteo----
+plot(proy_prov_letra, 
+     vertex.color= V(proy_prov_letra)$color,
+     vertex.frame.color= "black", 
+     vertex.shape= "rectangle",
+     vertex.size=27,
+     vertex.label= V(proy_prov_letra)$short_label,
+     vertex.label.cex=0.8,
+     vertex.label.color="black",
+     vertex.label.family="Helvetica",
+     vertex.label.font=2,
+     edge.width= E(gprov_letra)$weight*1.85, 
+     margin= c(0,0,0,0.6), 
+     asp=0.7,
+     main= "Relación entre provincias de acuerdo a las act. económicas clasificadas por letra")
+
+#install.packages("fields")
+library("fields")
+
+#agrego leyenda con degrade de colores
+image.plot(1, 1:length(colores_intensidad), matrix(1:length(colores_intensidad), nrow = 1),
+           col = colores_intensidad, axes = FALSE,
+           legend.only = TRUE, legend.shrink=0.4,
+           lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "", "",
+                        "", "", "","", "", "","", "","Menor"), 
+           horizontal = FALSE, 
+            key.width = 0.3)
+
+# Agregar el título a la leyenda 
+text(1.05,1.2, "Cantidad de puestos", cex = 1, font = 1, adj=0)
+
+           
+##Proyeccion de actividades por letra--------
+proy_activ_prov <- bipartite.projection(gprov_letra, which="true")
+
+#Suma de pesos y Normalizacion para poder usarlos en el plot
+suma_pesos_letra <- aggregate(weight ~ to, data = get.data.frame(gprov_letra), sum)
+
+print(suma_pesos_letra)
+
+suma_pesos_letra_norm <- (suma_pesos_letra$weight - min(suma_pesos_letra$weight)) / (max(suma_pesos_letra$weight) - min(suma_pesos_letra$weight))
+
+#Busco paleta de colores
+colores_intensidad_letra <- heat.colors(length(suma_pesos_letra_norm))
+
+#Asigno colores
+V(proy_activ_prov)$color <- colores_intensidad_letra[match(V(proy_activ_prov)$name, suma_pesos_letra$to)]
+
+###Ploteo-----
+plot(proy_activ_prov, 
+     vertex.label.cex = 1.25,
+     vertex.label.color = "grey2",
+     vertex.label.font=2,
+     vertex.size=20,
+     edge.color= "grey",
+     edge.width=E(gprov_letra)$weight*2,
+     margin=c(0, 0, 0.1, 0),
+     main="¿Cómo se relacionan las actividades entre si?",  
+     cex.main=1.5)
+
+#agrego leyenda con degrade de colores
+image.plot(1, 1:length(colores_intensidad_letra), matrix(1:length(colores_intensidad_letra), nrow = 1),
+           col = colores_intensidad_letra, axes = FALSE,
+           legend.only = TRUE, legend.shrink=0.4,
+           lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "","", "", "",
+                        "Menor"), 
+           horizontal = FALSE, 
+           key.width = 0.3)
+
+# Agregar el título a la leyenda 
+text(0.55,0.75, "Cantidad de puestos", cex = 1, font = 1, adj=0)
 
 
 
 
-     
+
+
