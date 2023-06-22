@@ -17,7 +17,7 @@ puestos22 <- excel %>%
   mutate(año = year(fecha), .after = fecha) %>% 
   filter(año==2022) %>% 
   mutate(mes = month(fecha), .after = fecha)
-  
+
 
 # Cambiamos nombres y atributos de las columnas para facilitar el análisis
 
@@ -162,8 +162,8 @@ puestos22_red_norm <- puestos22_red %>%
 #nuevo intento de normalizacion / x maximo
 puestos22_red_norm2 <- puestos22_red %>% 
   mutate(weight = weight/ max(puestos22_red$weight))
-           
- 
+
+
 max(puestos22_red$weight)
 
 glimpse(puestos22_red_norm) %>% print(n=200)
@@ -224,11 +224,11 @@ colors()[grep("violet", colors())]
 colors()[grep("pink", colors())]
 colors()[grep("grey", colors())]
 V(proy_region)$color <- case_when(V(proy_region)$name=="NEA"~"greenyellow",
-                                V(proy_region)$name=="PATAGONIA"~"royalblue",
-                                V(proy_region)$name=="AMBA"~"orangered",
-                                V(proy_region)$name=="CUYO"~"violetred4",
-                                V(proy_region)$name=="NOA"~"gold",
-                                V(proy_region)$name=="PAMPA"~"lightpink")
+                                  V(proy_region)$name=="PATAGONIA"~"royalblue",
+                                  V(proy_region)$name=="AMBA"~"orangered",
+                                  V(proy_region)$name=="CUYO"~"violetred4",
+                                  V(proy_region)$name=="NOA"~"gold",
+                                  V(proy_region)$name=="PAMPA"~"lightpink")
 
 ## Proyeccion actividades------
 #Ploteo la proyeccion de regiones. Red Completa
@@ -290,147 +290,147 @@ g_sin_x
 g_sin_x <- delete.vertices(g, 25)
 degree(g_sin_x) #red completa
 betweenness(g_sin_x, weights=NULL
-
+            
 #NEA-B es el que mas betweenness tiene
 edge.betweenness(proy_activ, weights=NULL) 
 
 ##NEA-B es el que tiene el weight mas bajo tambien.
 E(g_sin_x)[[38]]
 min(E(g_sin_x)$weight)
-
+            
 all_shortest_paths(g_sin_x, from=3)
 shortest_paths(g_sin_x, from = 3, weights=NA)
-
+            
 transitivity(proy_activ)
-
+            
 min(E(g_sin_x)$weight)
 edge_density(g_sin_x)
 #Analis de proyecciones por provincia y letra---------------------
-
+            
 #Creamos tabla con provincia y letra
 puestos22_red_prov_letra<- puestos22_mean %>%
   group_by(nombre_provincia_indec, letra) %>% 
   summarise(weight = sum(promedio))
-
+            
 #Estandarizamos weight
 puestos22_red_norm_prov_letra <- puestos22_red_prov_letra %>% 
-  mutate(weight = ((weight-media_weight)/ desvio_weight)+1)
-
+              mutate(weight = ((weight-media_weight)/ desvio_weight)+1)
+            
 #Selecciono columnas
 columnas_deseadas_prov_letra <- puestos22_red_norm_prov_letra[, c("nombre_provincia_indec", "letra", "weight")]
-
+            
 # Crear la red de flujos
 gprov_letra <- graph_from_data_frame(columnas_deseadas_prov_letra, directed = FALSE)
 gprov_letra <- delete.vertices(gprov_letra, 43) #elimino la categoria X
-
+            
 #Grafo bipartito
 bipartite_mapping(gprov_letra)
 V(gprov_letra)$type <- bipartite_mapping(gprov_letra)$type
-
+            
 #Abrevio nombres de provincias
 V(gprov_letra)$short_label <- case_when(V(gprov_letra)$name == "Santiago del Estero" ~ "Sgo. del Estero",  
-                                        V(gprov_letra)$name == "Tierra del Fuego" ~ "T. del Fuego",
-                                        V(gprov_letra)$name == "Buenos Aires" ~ "Bs. As.",
-                                        !V(gprov_letra)$name %in% c("Santiago del Estero", "Tierra del Fuego", "Buenos Aires") ~ V(gprov_letra)$name)
+                                                    V(gprov_letra)$name == "Tierra del Fuego" ~ "T. del Fuego",
+                                                    V(gprov_letra)$name == "Buenos Aires" ~ "Bs. As.",
+                                                    !V(gprov_letra)$name %in% c("Santiago del Estero", "Tierra del Fuego", "Buenos Aires") ~ V(gprov_letra)$name)
 E(gprov_letra)$weight
 V(gprov_letra)$label <- V(gprov_letra)$short_label
-
+            
 ##Proyecciones-------
 ###Proyeccion de provincias----
-
+            
 proy_prov_letra <- bipartite.projection(gprov_letra, which="false")
-
+            
 #Abreviatura para que entre en la forma seleccionada
 V(proy_prov_letra)$short_label <- case_when(V(proy_prov_letra)$name == "Santiago Del Estero" ~ "S. Del Estero",  
-                                        V(proy_prov_letra)$name == "Tierra Del Fuego" ~ "T. Del Fuego",
-                                        V(proy_prov_letra)$name == "Buenos Aires" ~ "Bs. As.",
-                                        !V(proy_prov_letra)$name %in% c("Santiago Del Estero", "Tierra Del Fuego", "Buenos Aires") ~ V(proy_prov_letra)$name)
-
+                                                        V(proy_prov_letra)$name == "Tierra Del Fuego" ~ "T. Del Fuego",
+                                                        V(proy_prov_letra)$name == "Buenos Aires" ~ "Bs. As.",
+                                                        !V(proy_prov_letra)$name %in% c("Santiago Del Estero", "Tierra Del Fuego", "Buenos Aires") ~ V(proy_prov_letra)$name)
+            
 #Definimos el color de los nodos de acuerdo a la suma del weight por provincia
-
+            
 #Suma de los pesos  por provincia 
 suma_pesos <- aggregate(weight ~ from, data = get.data.frame(gprov_letra), sum)
 print(suma_pesos)
-
+            
 E(proy_prov_letra)$weight
 #Normalizacion para poder usarlos en el plot
 suma_pesos_norm <- (suma_pesos$weight - min(suma_pesos$weight)) / (max(suma_pesos$weight) - min(suma_pesos$weight))
-
+            
 #Busco paleta de colores
 colores_intensidad <- heat.colors(length(suma_pesos_norm))
-
-
+            
+            
 V(proy_prov_letra)$color <- colores_intensidad[match(V(proy_prov_letra)$name, suma_pesos$from)]
-
+            
 ####Ploteo----
 plot(proy_prov_letra, 
-     vertex.color= V(proy_prov_letra)$color,
-     vertex.frame.color= "black", 
-     vertex.shape= "rectangle",
-     vertex.size=27,
-     vertex.label= V(proy_prov_letra)$short_label,
-     vertex.label.cex=0.8,
-     vertex.label.color="black",
-     vertex.label.family="Helvetica",
-     vertex.label.font=2,
-     edge.width= E(gprov_letra)$weight*1.85, 
-     margin= c(0,0,0,0.6), 
-     asp=0.7,
-     main= "Relación entre provincias de acuerdo a las act. económicas clasificadas por letra")
-
+                 vertex.color= V(proy_prov_letra)$color,
+                 vertex.frame.color= "black", 
+                 vertex.shape= "rectangle",
+                 vertex.size=27,
+                 vertex.label= V(proy_prov_letra)$short_label,
+                 vertex.label.cex=0.8,
+                 vertex.label.color="black",
+                 vertex.label.family="Helvetica",
+                 vertex.label.font=2,
+                 edge.width= E(gprov_letra)$weight*1.85, 
+                 margin= c(0,0,0,0.6), 
+                 asp=0.7,
+                 main= "Relación entre provincias de acuerdo a las act. económicas clasificadas por letra")
+            
 #install.packages("fields")
 library("fields")
-
+            
 #agrego leyenda con degrade de colores
 image.plot(1, 1:length(colores_intensidad), matrix(1:length(colores_intensidad), nrow = 1),
-           col = colores_intensidad, axes = FALSE,
-           legend.only = TRUE, legend.shrink=0.4,
-           lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "", "",
-                        "", "", "","", "", "","", "","Menor"), 
-           horizontal = FALSE, 
-            key.width = 0.3)
-
+                       col = colores_intensidad, axes = FALSE,
+                       legend.only = TRUE, legend.shrink=0.4,
+                       lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "", "",
+                                    "", "", "","", "", "","", "","Menor"), 
+                       horizontal = FALSE, 
+                       key.width = 0.3)
+            
 # Agregar el título a la leyenda 
 text(1.05,1.2, "Cantidad de puestos", cex = 1, font = 1, adj=0)
-
-           
+            
+            
 ##Proyeccion de actividades por letra--------
 proy_activ_prov <- bipartite.projection(gprov_letra, which="true")
-
+            
 #Suma de pesos y Normalizacion para poder usarlos en el plot
 suma_pesos_letra <- aggregate(weight ~ to, data = get.data.frame(gprov_letra), sum)
-
+            
 print(suma_pesos_letra)
-
+            
 suma_pesos_letra_norm <- (suma_pesos_letra$weight - min(suma_pesos_letra$weight)) / (max(suma_pesos_letra$weight) - min(suma_pesos_letra$weight))
-
+            
 #Busco paleta de colores
 colores_intensidad_letra <- heat.colors(length(suma_pesos_letra_norm))
-
+            
 #Asigno colores
 V(proy_activ_prov)$color <- colores_intensidad_letra[match(V(proy_activ_prov)$name, suma_pesos_letra$to)]
-
+            
 ###Ploteo-----
 plot(proy_activ_prov, 
-     vertex.label.cex = 1.25,
-     vertex.label.color = "grey2",
-     vertex.label.font=2,
-     vertex.size=20,
-     edge.color= "grey",
-     edge.width=E(gprov_letra)$weight*2,
-     margin=c(0, 0, 0.1, 0),
-     main="¿Cómo se relacionan las actividades entre si?",  
-     cex.main=1.5)
-
+                 vertex.label.cex = 1.25,
+                 vertex.label.color = "grey2",
+                 vertex.label.font=2,
+                 vertex.size=20,
+                 edge.color= "grey",
+                 edge.width=E(gprov_letra)$weight*2,
+                 margin=c(0, 0, 0.1, 0),
+                 main="¿Cómo se relacionan las actividades entre si?",  
+                 cex.main=1.5)
+            
 #agrego leyenda con degrade de colores
 image.plot(1, 1:length(colores_intensidad_letra), matrix(1:length(colores_intensidad_letra), nrow = 1),
-           col = colores_intensidad_letra, axes = FALSE,
-           legend.only = TRUE, legend.shrink=0.4,
-           lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "","", "", "",
-                        "Menor"), 
-           horizontal = FALSE, 
-           key.width = 0.3)
-
+                       col = colores_intensidad_letra, axes = FALSE,
+                       legend.only = TRUE, legend.shrink=0.4,
+                       lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "","", "", "",
+                                    "Menor"), 
+                       horizontal = FALSE, 
+                       key.width = 0.3)
+            
 # Agregar el título a la leyenda 
 text(0.55,0.75, "Cantidad de puestos", cex = 1, font = 1, adj=0)
 
@@ -439,3 +439,57 @@ text(0.55,0.75, "Cantidad de puestos", cex = 1, font = 1, adj=0)
 
 
 
+
+#Red Bipartita con Centralidad Autovector---------------------------------
+library(igraph)
+library(ggplot2)
+
+# Crear nodos
+nodos_region <- unique(puestos22$region)
+nodos_letra_desc <- unique(puestos22$letra_desc)
+
+# Crear edges
+edges <- puestos22[, c("region", "letra_desc", "puestos")]
+
+# Crear vector de nombres de nodos
+nombres_nodos <- c(nodos_region, nodos_letra_desc)
+
+# Crear red bipartita
+red_bipartita <- graph_from_data_frame(edges, directed = FALSE, vertices = nombres_nodos)
+
+# Calcular centralidad autovector
+centralidad_autovector <- eigen_centrality(red_bipartita)$vector
+
+# Agregar la centralidad autovector como atributo a los nodos
+V(red_bipartita)$centralidad_autovector <- centralidad_autovector
+
+# Crear el objeto del gráfico de red
+grafo <- red_bipartita
+
+# Establecer los colores de los nodos para regiones y actividades económicas
+colores_nodos <- c("region" = "blue", "letra_desc" = "red")
+
+# Calcular la posición de los nodos utilizando el algoritmo Fruchterman-Reingold
+posiciones_nodos <- layout_with_fr(grafo)
+
+# Convertir los datos de los enlaces en un data.frame
+enlaces <- as.data.frame(get.edgelist(grafo))
+
+# Crear el gráfico de red utilizando ggplot2
+grafico_red <- ggplot() +
+  theme_void() +
+  geom_segment(aes(x = posiciones_nodos[enlaces$x, 1], y = posiciones_nodos[enlaces$x, 2],
+                   xend = posiciones_nodos[enlaces$y, 1], yend = posiciones_nodos[enlaces$y, 2]),
+               arrow = arrow(length = unit(0.15, "cm")), alpha = 0.5, show.legend = FALSE) +
+  geom_point(aes(x = posiciones_nodos[, 1], y = posiciones_nodos[, 2], color = V(grafo)$centralidad_autovector),
+             size = 5) +
+  scale_color_gradient(low = "blue", high = "red", name = "Centralidad Autovector") +
+  labs(title = "Red Bipartita con Centralidad Autovector",
+       x = "", y = "") +
+  theme(plot.title = element_text(size = 16, face = "bold"))
+
+# Mostrar el gráfico de red
+print(grafico_red)
+
+
+            
