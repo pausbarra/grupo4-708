@@ -354,12 +354,23 @@ print(suma_pesos)
             
 E(proy_prov_letra)$weight
 #Normalizacion para poder usarlos en el plot
-suma_pesos_norm <- (suma_pesos$weight - min(suma_pesos$weight)) / (max(suma_pesos$weight) - min(suma_pesos$weight))
-            
+suma_pesos_norm <- (suma_pesos$weight  / (max(suma_pesos$weight)))
+
+#Agrego atributo a los vertices
+V(proy_prov_letra)$suma_weight <- suma_pesos_norm
+suma_pesos_norm %>% sort()
+#Creo intervalos
+intervalo_prov <- c(0,0.22,0.25,0.28,0.37,0.45,2)
+#Asigno atributo de intervalos
+V(proy_prov_letra)$intervalos <- cut(V(proy_prov_letra)$suma_weight, breaks = intervalo_prov, include.lowest = TRUE)
+#Creo paleta
+color_func <- heat.colors((length(intervalo_prov) - 1),rev=TRUE)
+#Asigno colores
+V(proy_prov_letra)$color <- color_func[as.numeric(V(proy_prov_letra)$intervalos)]
 #Busco paleta de colores
 colores_intensidad <- heat.colors(length(suma_pesos_norm))
-            
-            
+
+
 V(proy_prov_letra)$color <- colores_intensidad[match(V(proy_prov_letra)$name, suma_pesos$from)]
             
 ####Ploteo----
@@ -382,16 +393,15 @@ plot(proy_prov_letra,
 library("fields")
             
 #agrego leyenda con degrade de colores
-image.plot(1, 1:length(colores_intensidad), matrix(1:length(colores_intensidad), nrow = 1),
-                       col = colores_intensidad, axes = FALSE,
+image.plot(1, 1:length(color_func), matrix(1:length(color_func), nrow = 1),
+                       col = color_func, axes = FALSE,
                        legend.only = TRUE, legend.shrink=0.4,
-                       lab.breaks=c("Mayor", "", "", "","", "", "","", "", "","", "", "","", "", "",
-                                    "", "", "","", "", "","", "","Menor"), 
+                       lab.breaks=c("Menor", "", "", "","","", "Mayor"), 
                        horizontal = FALSE, 
                        key.width = 0.3)
             
 # Agregar el título a la leyenda 
-text(1.05,1.2, "Cantidad de puestos", cex = 1, font = 1, adj=0)
+text(1.3,1.2, "Cantidad de puestos", cex = 1, font = 1, adj=0)
             
             
 ##Proyeccion de actividades por letra--------
