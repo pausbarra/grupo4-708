@@ -523,30 +523,3 @@ grafico_red <- ggplot() +
 # Mostrar el gráfico de red
 print(grafico_red)
 
-#Creamos tabla con provincia y letra
-puestos22_red_depto_cod<- puestos22_mean %>%
-  group_by(nombre_departamento_indec, clae2) %>% 
-  summarise(weight = sum(promedio))
-
-#Estandarizamos weight
-puestos22_red_norm_depto_cod <- puestos22_red_depto_cod %>% 
-  mutate(weight = (weight/ max(weight)))
-
-#Selecciono columnas
-columnas_deseadas_cod_depto <- puestos22_red_depto_cod[, c("nombre_departamento_indec", "clae2", "weight")]
-gdepto_clae <- graph_from_data_frame(columnas_deseadas_cod_depto, directed = FALSE)
-# undirected?
-
-E(g)$weight
-
-bipartite.mapping(gdepto_clae)
-V(gdepto_clae)$type <- bipartite_mapping(gdepto_clae)$type
-g
-proy_depto <- bipartite.projection(gdepto_clae, which=FALSE)
-proy_clae <- bipartite.projection(gdepto_clae, which=TRUE)
-plot(proy_clae, edge.width=E(gdepto_clae)$weight*1.5)
-        
-
-transitivity(gdepto_clae)
-degree(gdepto_clae)
-degree(proy_clae)
